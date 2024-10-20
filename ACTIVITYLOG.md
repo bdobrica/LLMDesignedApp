@@ -76,3 +76,74 @@ go run main.go
 # system
 # system_traces
 ```
+
+## Basic User Management
+
+Connecting to Cassandra and checking the `users` table, also reseting it after each test:
+
+```sh
+cd ~/GitHub/LLMDesignedApp/go-cassandra-app
+docker compose exec cassandra cqlsh
+cqlsh> use user_management;
+cqlsh:user_management> select * from users;
+cqlsh:user_management> truncate users;
+```
+
+Adding new user (I use `jq` for formatting the output):
+
+```sh
+curl -X POST http://localhost:3000/register \
+     -H "Content-Type: application/json" \
+     -d '{"username":"testuser","email":"email@example.com","password":"password123"}' | jq
+#   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+#                                  Dload  Upload   Total   Spent    Left  Speed
+# 100   308  100   227  100    81  13867   4948 --:--:-- --:--:-- --:--:-- 19250
+# {
+#   "status": true,
+#   "data": {
+#     "id": "3f052c15-8f0d-11ef-9125-00155d0889c3",
+#     "username": "testuser",
+#     "email": "email@example.com",
+#     "password": "password123",
+#     "email_verified": false,
+#     "verification_token": "<token>"
+#   }
+# }
+```
+
+Verifying the user:
+```sh
+curl 'http://localhost:3000/verify/<token>'
+# {
+#   "status": true,
+#   "message": "Email successfully verified"
+# }
+```
+
+Recover password for user:
+```sh
+curl -X POST 'http://localhost:3000/recover' \
+     -H "Content-Type: application/json" \
+     -d '{"email":"email@example.com"}' | jq
+#   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+#                                  Dload  Upload   Total   Spent    Left  Speed
+# 100   102  100    69  100    33   8745   4182 --:--:-- --:--:-- --:--:-- 14571
+# {
+#   "status": true,
+#   "message": "Password recovery email sent successfully"
+# }
+```
+
+Reset password for user:
+```sh
+curl -X POST 'http://localhost:3000/reset/<token>' \
+     -H "Content-Type: application/json" \
+     -d '{"password":"newpassword"}' | jq
+#   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+#                                  Dload  Upload   Total   Spent    Left  Speed
+# 100    81  100    55  100    26   5641   2666 --:--:-- --:--:-- --:--:--  9000
+# {
+#   "status": true,
+#   "message": "Password successfully reset"
+# }
+```

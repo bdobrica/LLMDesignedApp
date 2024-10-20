@@ -19,3 +19,6 @@
 
 # Go workspace file
 go.work
+
+# Remove Cassandra Data
+go-cassandra-app/cassandra_data
