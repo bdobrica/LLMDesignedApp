@@ -10,7 +10,6 @@ import (
 
 	"github.com/gocql/gocql"
 	"github.com/gofiber/fiber/v2"
-	"github.com/google/uuid"
 )
 
 var session *gocql.Session
@@ -113,12 +112,24 @@ func registerUser(c *fiber.Ctx) error {
 	user.ID = gocql.TimeUUID()
 	user.EmailVerified = false
 	user.VerificationToken = generateToken()
+	hashedPassword, err := hashPassword(user.Password)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(Response{
+			Status:  false,
+			Message: "Error hashing password",
+			Data:    nil,
+			Error: &Error{
+				Message: "Internal server error",
+				Detail:  err.Error(),
+			},
+		})
+	}
 
 	// Insert user into Cassandra
 	if err := session.Query(`
         INSERT INTO users (id, username, email, password, email_verified, verification_token, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		user.ID, user.Username, user.Email, user.Password, user.EmailVerified, user.VerificationToken, time.Now()).Exec(); err != nil {
+		user.ID, user.Username, user.Email, hashedPassword, user.EmailVerified, user.VerificationToken, time.Now()).Exec(); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(Response{
 			Status:  false,
 			Message: "Error registering user",
@@ -208,7 +219,7 @@ func recoverPassword(c *fiber.Ctx) error {
 	}
 
 	// Generate a verification token
-	verificationToken := uuid.New().String()
+	verificationToken := generateToken()
 
 	// Store the verification token in the database
 	err = session.Query(`UPDATE users SET verification_token = ? WHERE id = ?`, verificationToken, user.ID).Exec()
