@@ -161,3 +161,27 @@ export SMTP_PASSWORD=...
 export SMTP_SENDER_EMAIL=...
 go run main.go
 ```
+
+## Creating the Authentication Service
+
+Creating and initializing the `auth-service`:
+
+```sh
+cd ~/GitHub/LLMDesignedApp/auth-service
+go mod init github.com/bdobrica/LLMDesignedApp/auth-service
+go get github.com/gofiber/fiber/v2
+go get github.com/golang-jwt/jwt/v5
+go get github.com/gocql/gocql
+go get golang.org/x/crypto/bcrypt
+```
+
+### Creating the go-common package, to reuse password hashing
+
+Creating the `go-common` package:
+
+```sh
+cd ~/GitHub/LLMDesignedApp
+mkdir go-common
+cd go-common
+go mod init github.com/bdobrica/LLMDesignedApp/go-common
+```
