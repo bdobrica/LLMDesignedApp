@@ -185,3 +185,7 @@ mkdir go-common
 cd go-common
 go mod init github.com/bdobrica/LLMDesignedApp/go-common
 ```
+
+## Adding generate*RandomToken functions to go-common
+
+No additional steps needed.
