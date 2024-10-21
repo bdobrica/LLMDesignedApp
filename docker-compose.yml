@@ -1,0 +1,67 @@
+services:
+  cassandra:
+    image: cassandra:latest
+    container_name: cassandra
+    ports:
+      - "9042:9042"
+    networks:
+      - backend
+    environment:
+      CASSANDRA_CLUSTER_NAME: "TestCluster"
+      CASSANDRA_NUM_TOKENS: 256
+      CASSANDRA_DC: "datacenter1"
+      CASSANDRA_RACK: "rack1"
+      CASSANDRA_SEEDS: "cassandra"
+    volumes:
+      - ./cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: [ "CMD", "cqlsh", "-e", "SELECT now() FROM system.local" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # User Management Microservice
+  user-management:
+    build:
+      context: ./user-management
+      dockerfile: Dockerfile
+    container_name: user-management
+    ports:
+      - "3000:3000"
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    environment:
+      - CASSANDRA_HOSTS=cassandra
+      - CASSANDRA_KEYSPACE=user_management
+      - JWT_SECRET=your_jwt_secret_key
+      - SMTP_HOST=
+      - SMTP_PORT=
+      - SMTP_USERNAME=
+      - SMTP_PASSWORD=
+      - SMTP_SENDER_EMAIL=
+    networks:
+      - backend
+
+  # Auth Service Microservice
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "3001:3001"
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    environment:
+      - CASSANDRA_HOSTS=cassandra
+      - CASSANDRA_KEYSPACE=user_management
+      - JWT_SECRET=your_jwt_secret_key
+    networks:
+      - backend
+
+# Networks definition
+networks:
+  backend:
+    driver: bridge

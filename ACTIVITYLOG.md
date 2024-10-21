@@ -186,9 +186,11 @@ cd go-common
 go mod init github.com/bdobrica/LLMDesignedApp/go-common
 ```
 
-## Adding generate*RandomToken functions to go-common
+### Adding generate*RandomToken functions to go-common
 
 No additional steps needed.
+
+### Returning to the auth-service
 
 Updating the go-common package:
 
@@ -243,4 +245,30 @@ curl -X POST http://localhost:3000/login \
 #   "message": "Login successful",
 #   "status": true
 # }
+```
+
+## Dockerizing the services
+
+Restructuring the repository:
+
+```sh
+cd ~/GitHub/LLMDesignedApp
+mkdir cassandra
+mv go-cassandra-app/schema.cql cassandra/
+mv go-cassandra-app/docker-compose.yml ./
+mv go-cassandra-app/cassandra_data ./
+rm -rf go-cassandra-app
+```
+
+Starting the services:
+
+```sh
+docker compose down
+docker compose build
+docker compose up -d
+docker compose ps
+# NAME              IMAGE                            COMMAND                  SERVICE           CREATED          STATUS                    PORTS
+# auth-service      llmdesignedapp-auth-service      "./auth-service"         auth-service      53 seconds ago   Up 19 seconds             0.0.0.0:3001->3001/tcp, :::3001->3001/tcp
+# cassandra         cassandra:latest                 "docker-entrypoint.s…"   cassandra         53 seconds ago   Up 52 seconds (healthy)   7000-7001/tcp, 7199/tcp, 9160/tcp, 0.0.0.0:9042->9042/tcp, :::9042->9042/tcp
+# user-management   llmdesignedapp-user-management   "./user-management"      user-management   53 seconds ago   Up 19 seconds             0.0.0.0:3000->3000/tcp, :::3000->3000/tcp
 ```

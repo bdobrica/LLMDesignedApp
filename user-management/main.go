@@ -50,8 +50,9 @@ type Error struct {
 
 func main() {
 	// Connect to Cassandra
-	cluster := gocql.NewCluster("127.0.0.1")
-	cluster.Keyspace = "user_management"
+	cassandraHosts := strings.Split(os.Getenv("CASSANDRA_HOSTS"), ",")
+	cluster := gocql.NewCluster(cassandraHosts...)
+	cluster.Keyspace = os.Getenv("CASSANDRA_KEYSPACE")
 	cluster.Consistency = gocql.Quorum
 	var err error
 	session, err = cluster.CreateSession()

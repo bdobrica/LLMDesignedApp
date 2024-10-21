@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"strings"
 
 	"github.com/gocql/gocql"
 	"github.com/gofiber/fiber/v2"
@@ -29,8 +31,9 @@ func main() {
 }
 
 func initCassandra() (*gocql.Session, error) {
-	cluster := gocql.NewCluster("127.0.0.1")
-	cluster.Keyspace = "user_management"
+	cassandraHosts := strings.Split(os.Getenv("CASSANDRA_HOSTS"), ",")
+	cluster := gocql.NewCluster(cassandraHosts...)
+	cluster.Keyspace = os.Getenv("CASSANDRA_KEYSPACE")
 	cluster.Consistency = gocql.Quorum
 	return cluster.CreateSession()
 }

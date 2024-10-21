@@ -21,4 +21,4 @@
 go.work
 
 # Remove Cassandra Data
-go-cassandra-app/cassandra_data
+cassandra_data
