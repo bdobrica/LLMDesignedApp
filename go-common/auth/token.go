@@ -7,7 +7,7 @@ import (
 )
 
 // generateRandomToken generates a secure random token of a given length
-func generateBase64RandomToken(length int) (string, error) {
+func GenerateBase64RandomToken(length int) (string, error) {
 	// Create a byte slice to hold the random bytes
 	bytes := make([]byte, length)
 
@@ -24,7 +24,7 @@ func generateBase64RandomToken(length int) (string, error) {
 	return token[:length], nil
 }
 
-func generateHexRandomToken(length int) (string, error) {
+func GenerateHexRandomToken(length int) (string, error) {
 	// Create a byte slice to hold the random bytes; simulate ceil division by adding 1
 	bytes := make([]byte, (length+1)/2)
 
