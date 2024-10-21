@@ -147,3 +147,17 @@ curl -X POST 'http://localhost:3000/reset/<token>' \
 #   "message": "Password successfully reset"
 # }
 ```
+
+## Filling in the blanks for User Management
+
+```sh
+cd ~/GitHub/LLMDesignedApp/user-management
+go get golang.org/x/crypto/bcrypt
+go get gopkg.in/gomail.v2
+export SMTP_HOST=...
+export SMTP_PORT=...
+export SMTP_USERNAME=...
+export SMTP_PASSWORD=...
+export SMTP_SENDER_EMAIL=...
+go run main.go
+```

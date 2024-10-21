@@ -2,14 +2,19 @@ package main
 
 import (
 	"crypto/rand"
+	"crypto/tls"
 	"encoding/hex"
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gocql/gocql"
 	"github.com/gofiber/fiber/v2"
+	"golang.org/x/crypto/bcrypt"
+	"gopkg.in/gomail.v2"
 )
 
 var session *gocql.Session
@@ -337,19 +342,100 @@ func generateToken() string {
 	return hex.EncodeToString(token)
 }
 
-// Mock function to send email (implement this according to your email service)
+// sendEmail sends a password recovery email using an external SMTP server.
 func sendEmail(to, token string) error {
-	// Log the email sending details
+	// Create the recovery link
 	recoveryLink := fmt.Sprintf("http://localhost:3000/password/reset/%s", token) // Adjust URL as necessary
+
+	// Log email details for debugging
 	log.Printf("Sending password recovery email to: %s\nLink: %s\n", to, recoveryLink)
 
-	// Here you'd typically use an email library to send the email.
-	// For demonstration, we'll just return nil.
+	// Get sender's email from environment variables
+	senderEmail := os.Getenv("SMTP_SENDER_EMAIL")
+	if senderEmail == "" {
+		log.Println("Error: SMTP_SENDER_EMAIL is not set")
+		return fmt.Errorf("SMTP_SENDER_EMAIL is not set")
+	}
+	log.Printf("Sender email: %s\n", senderEmail)
+
+	// Log recipient's email
+	log.Printf("Recipient email: %s\n", to)
+	if to == "" {
+		return fmt.Errorf("recipient email is empty")
+	}
+
+	// Set up Gomail
+	m := gomail.NewMessage()
+
+	// Set the sender's email address
+	m.SetHeader("From", senderEmail)
+
+	// Set the recipient's email address
+	m.SetHeader("To", to)
+
+	// Set the subject of the email
+	m.SetHeader("Subject", "Password Recovery")
+
+	// Set the body of the email (HTML or plain text)
+	m.SetBody("text/html", fmt.Sprintf(`
+        <h1>Password Recovery</h1>
+        <p>You have requested to reset your password. Please click the following link to reset your password:</p>
+        <a href="%s">Reset Password</a>
+    `, recoveryLink))
+
+	// Use an external SMTP server to send the email
+	d := gomail.NewDialer(
+		os.Getenv("SMTP_HOST"),        // SMTP server host (e.g., smtp.example.com)
+		getEnvAsInt("SMTP_PORT", 587), // SMTP server port (default: 587)
+		os.Getenv("SMTP_USERNAME"),    // SMTP server username
+		os.Getenv("SMTP_PASSWORD"),    // SMTP server password
+	)
+
+	// Set TLS configuration (useful for enforcing TLS)
+	d.TLSConfig = &tls.Config{
+		InsecureSkipVerify: false,            // Set this to true only for self-signed certificates in development
+		MinVersion:         tls.VersionTLS12, // Enforce a minimum version of TLS (e.g., TLS 1.2)
+	}
+
+	// Send the email
+	if err := d.DialAndSend(m); err != nil {
+		log.Printf("Failed to send email to %s: %v\n", to, err)
+		return err
+	}
+
+	log.Printf("Password recovery email successfully sent to %s\n", to)
 	return nil
 }
 
-// Hash password function (implement according to your security requirements)
+// Utility function to retrieve environment variables as integers
+func getEnvAsInt(name string, defaultValue int) int {
+	valueStr := os.Getenv(name)
+	if valueStr == "" {
+		return defaultValue
+	}
+
+	value, err := strconv.Atoi(valueStr)
+	if err != nil {
+		log.Printf("Error parsing environment variable %s: %v. Using default value: %d", name, err, defaultValue)
+		return defaultValue
+	}
+
+	return value
+}
+
+// hashPassword takes a plain password as input and returns its bcrypt hashed version.
 func hashPassword(password string) (string, error) {
-	// Implement hashing logic, e.g., using bcrypt
-	return password, nil // For demonstration only; implement actual hashing
+	// Use bcrypt to generate a hashed password with a cost of bcrypt.DefaultCost (currently 10)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(hashedPassword), nil
+}
+
+// comparePasswords compares the plain password with the hashed password stored in the database
+func comparePasswords(hashedPassword, plainPassword string) error {
+	// Use bcrypt to compare the hashed password with the plaintext password
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plainPassword))
+	return err
 }
