@@ -189,3 +189,58 @@ go mod init github.com/bdobrica/LLMDesignedApp/go-common
 ## Adding generate*RandomToken functions to go-common
 
 No additional steps needed.
+
+Updating the go-common package:
+
+```sh
+cd ~/GitHub/LLMDesignedApp/auth-service
+go get github.com/bdobrica/LLMDesignedApp/go-common@bc40db16676062c93bfedfcd58628eb6e6344533
+```
+
+Creating the table for storing the tokens:
+
+```sh
+cd ~/GitHub/LLMDesignedApp/go-cassandra-app
+cat ./schema.cql | docker compose exec -T cassandra cqlsh
+```
+
+Testing that I can generate a token:
+
+```sh
+cd ~/GitHub/LLMDesignedApp/user-management
+go run .
+curl -X POST http://localhost:3000/register \
+     -H "Content-Type: application/json" \
+     -d '{"username": "john_doe", "email": "john@example.com", "password": "password123"}' | jq
+#   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+#                                  Dload  Upload   Total   Spent    Left  Speed
+# 100   301  100   221  100    80   3116   1128 --:--:-- --:--:-- --:--:--  4300
+# {
+#   "status": true,
+#   "data": {
+#     "id": "afd8b2aa-8fb3-11ef-b53f-00155d0889c3",
+#     "username": "john_doe",
+#     "email": "john@example.com",
+#     "password": "password123",
+#     "email_verified": false,
+#     "verification_token": "c3ef23666142974bab96f6263dac6d1f"
+#   }
+# }
+cd ~/GitHub/LLMDesignedApp/auth-service
+go run .
+curl -X POST http://localhost:3000/login \
+     -H "Content-Type: application/json" \
+     -d '{"username": "john_doe", "password": "password123"}' | jq
+#   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+#                                  Dload  Upload   Total   Spent    Left  Speed
+# 100   361  100   310  100    51   4306    708 --:--:-- --:--:-- --:--:--  5084
+# {
+#   "data": {
+#     "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Mjk1MjAzMTAsInVzZXJfaWQiOiJhZmQ4YjJhYS04ZmIzLTExZWYtYjUzZi0wMDE1NWQwODg5YzMifQ.iKYJ2zhQyiNY689rAdN6J81M0b1EHMHgHjDSVtWyYkw",
+#     "expires_in": 900,
+#     "refresh_token": "s0pXQA2kXwVBhHfONWDHVnPyRAZukKaP"
+#   },
+#   "message": "Login successful",
+#   "status": true
+# }
+```
